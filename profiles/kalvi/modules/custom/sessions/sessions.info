@@ -1,0 +1,7 @@
+name = "Sessions"
+description = "Add a session to one or more courses"
+package = Development
+
+
+version = "7.x-1.1"
+core = 7.x

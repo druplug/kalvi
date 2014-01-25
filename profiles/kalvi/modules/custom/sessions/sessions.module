@@ -1,0 +1,101 @@
+<?php
+
+/**
+ * Implements hook_menu().
+ */
+function sessions_menu() {
+  $items['sessions/add'] = array(
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('sessions_add_form'),
+    'access arguments' => array('access content'),
+    'type' => MENU_NORMAL_ITEM,
+  );
+  return $items;
+}
+
+function sessions_form_alter(&$form, &$form_state, $form_id) {
+  if($form_id == 'session_node_form') {
+    kpr($form);
+    $form['field_course'] = array(
+      '#type' => 'select',
+      '#title' => t('Course'),
+      '#required' => TRUE,
+      '#description' => t('Course under which this question should be posted'),
+      '#options' => _entity_as_options('course'),
+    );   
+    
+    $form['submit'] = array(
+      '#type' => 'submit',
+      '#value' => t('Add Session'),
+      '#submit' => 'sessions_add_form_submit',
+    );
+  }
+}
+
+function sessions_add_form($form, $form_state) {
+  $form['title'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Title'),
+    '#required' => TRUE,
+  );
+
+  $form['body'] = array(
+    '#type' => 'textarea',
+    '#rows' => 6,
+    '#title' => t('Content'),
+    '#attributes' => array('class' => array('content')),
+  );
+
+  $form['course'] = array(
+      '#type' => 'select',
+      '#title' => t('Course'),
+      '#required' => TRUE,
+      '#description' => t('Course under which this question should be posted'),
+      '#options' => _entity_as_options('course'),
+    );
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Add Session'),
+    '#submit' => 'sessions_add_form_submit',
+  );
+  return $form;
+}
+
+function sessions_add_form_submit($form, $form_state) {
+  
+  $node = new stdClass();
+ 
+  $node->type = 'session';
+  node_object_prepare($node);
+  $node->title = $form_state['values']['title'];
+  $node->language = LANGUAGE_NONE;
+  $node->body[LANGUAGE_NONE]['0']['value'] = 'test content';//$form_state['values']['body'];
+  node_submit($node);
+  node_save($node);
+
+  //create a relation bet. this session and the selected course
+  $rel = 'sessions';
+  $endpoints = array(
+    array('entity_type' => 'course', 'entity_id' => $form_state['values']['course']),
+    array('entity_type' => 'node', 'entity_id' => $node->nid),
+  );
+  $course_session = relation_relation_exists($endpoints, $rel);
+  if (!$course_session) {
+    $course_session = relation_create($rel, $endpoints);
+    relation_save($course_session);
+  }
+}
+
+function _entity_as_options($entity_type) {
+  $entities = array();
+  $query = new EntityFieldQuery();
+  $query
+    ->entityCondition('entity_type', $entity_type, '=');
+  $result = $query->execute();
+  foreach($result['course'] as $course) {
+    $entity = entity_load('course', array($course->id));
+    $entities[$entity[1]->id] = $entity[1]->title;
+  }
+  return $entities;
+}

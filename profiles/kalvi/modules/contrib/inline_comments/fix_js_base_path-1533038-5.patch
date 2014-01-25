@@ -1,0 +1,77 @@
+diff --git a/js/ajaxPoster.js b/js/ajaxPoster.js
+index 6ea4ae1..5be0a67 100644
+--- a/js/ajaxPoster.js
++++ b/js/ajaxPoster.js
+@@ -11,6 +11,7 @@
+ 
+ function ajaxCommentsPoster(options) {
+   var $$ = this;
++  var basepath = Drupal.settings.basePath;
+     
+    //ctext = $('.ajaxComments').length > 0 ? $('.ajaxComments') : $('#edit-comment-body-und-0-value');
+    ctext = $('#edit-comment-body-und-0-value').value;
+@@ -21,7 +22,7 @@ function ajaxCommentsPoster(options) {
+     nid: $('#comment-form').parents('.views-row').find('.node-nid').text(),
+     uid: $('#comment-form').parents('.views-row').find('.user-uid').text(),
+     targetEle: $('#comments'),
+-    url: '/ajax/inline_comments/add_comments',
++    url: basepath + 'ajax/inline_comments/add_comments',
+     slideDown: false,
+     ajaxtype: 'POST'
+   },
+diff --git a/js/loadComments.js b/js/loadComments.js
+index c2d6861..fb6a462 100644
+--- a/js/loadComments.js
++++ b/js/loadComments.js
+@@ -7,12 +7,13 @@
+ 			var nid = $(row).find('.node-nid').text();
+ 			var comments = $('<div class=\'comment-group\'></div>');
+ 			var spinner = $('<div class=\'spinner\'>Loading ...</div>');
++			var basepath = Drupal.settings.basePath;
+ 			if (!$(ccount).hasClass('ajaxloaded')) {
+ 				$(row).append(spinner).fadeIn('fast');
+ 				$(row).append(comments);
+ 				$.ajax({
+ 					type: 'GET',
+-					url: '/ajax/inline_comments/get_comments/' + nid,
++					url: basepath + 'ajax/inline_comments/get_comments/' + nid,
+ 					error:function(xhr,err){		
+ 
+               return false;
+diff --git a/js/reformatPager.js b/js/reformatPager.js
+index 2801a12..5b04d34 100644
+--- a/js/reformatPager.js
++++ b/js/reformatPager.js
+@@ -1,6 +1,7 @@
+ (function($) {
+ 	jQuery.fn.reformatPager = function(options) {
+ 		var $$ = $(this);
++		var basepath = Drupal.settings.basePath;
+ 		$$.options = options;
+ 		return this.each(function(index) {
+ 			jQuery.extend($$, {
+@@ -19,8 +20,8 @@
+ 				if (params[1] == 'add') {
+ 					regex = /nid=([0-9]+)/i;
+ 					params = baseHref[1].match(regex);
+-
+-					var newhref = '/ajax/tumblrstyle/get_comments/' + params[1] + '?page=1';
++					
++					var newhref = basepath + 'ajax/tumblrstyle/get_comments/' + params[1] + '?page=1';
+ 					link.attr('href', newhref);
+ 				}
+ 				$$.ele.find('.pager-current, .pager-item, .pager-last, .pager-first, .pager-previous, .pager-ellipsis').remove();
+diff --git a/js/reply.js b/js/reply.js
+index 839b5f7..fdbedc2 100644
+--- a/js/reply.js
++++ b/js/reply.js
+@@ -11,7 +11,8 @@ $.fn.reply = function(options) {
+ 		var regex = /\/comment\/reply\/([0-9]+)/i;
+ 		//var regex = /(comment)/
+ 		var params = hreflink.match(regex);
+-		var theurl = '/ajax/inline_comments/get_comment_form/' + params[1]; //+ '/' + params[2];
++		var basepath = Drupal.settings.basePath;
++		var theurl = basepath + 'ajax/inline_comments/get_comment_form/' + params[1]; //+ '/' + params[2];
+ 		var row =  $$.parents('.views-row');
+ 		row = $(row);
+ 		var comment = row.find('.comment-group');
