@@ -1,0 +1,165 @@
+<?php
+
+/**
+ * @file
+ * Installation functions for IDEOne
+ */
+/**
+ * Implements hook_install().
+ */
+function ideone_install() {
+  // Add body field to ideone node
+  cache_clear_all('autoload:', 'cache');
+}
+
+/**
+ * Implementation of hook_schema().
+ */
+function ideone_schema() {
+  $schema['quiz_ideone_node'] = array(
+    'fields' => array(
+      'nid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'vid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'programming_language' => array(
+        'description' => 'The programming language each submission.',
+        'type' => 'varchar',
+        'length' => 30,
+        'not null' => TRUE,
+      ),
+      'input' => array(
+        'description' => 'Input data for submission.',
+        'type' => 'text',
+        'size' => 'normal',
+        'serialize' => TRUE,
+      ),
+      'output' => array(
+        'description' => 'Output of submission.',
+        'type' => 'text',
+        'size' => 'normal',
+        'serialize' => TRUE,
+      ),
+    ),
+    'primary key' => array(
+      'vid', 'nid'
+    ),
+  );
+
+  $schema['ideone'] = array(
+    'description' => 'Stores IDE one submissions.',
+    'fields' => array(
+      'link' => array(
+        'description' => 'The unique ID of each submission.',
+        'type' => 'varchar',
+        'length' => 20,
+        'not null' => TRUE,
+      ),
+      'date' => array(
+        'type' => 'int',
+        'sortable' => TRUE,
+        'views' => TRUE,
+      ),
+      'language_id' => array(
+        'description' => 'Programming language of the submitted source code',
+        'type' => 'int',
+        'not null' => TRUE,
+        'size' => 'medium',
+      ),
+      'language' => array(
+        'description' => 'The programming language each submission.',
+        'type' => 'varchar',
+        'length' => 30,
+        'not null' => TRUE,
+      ),
+      'language_version' => array(
+        'description' => 'The version of programming language of each submission.',
+        'type' => 'varchar',
+        'length' => 30,
+        'not null' => TRUE,
+      ),
+      'time' => array(
+        'description' => 'Time taken to execute the program.',
+        'type' => 'float',
+      ),
+      'memory' => array(
+        'type' => 'int',
+        'description' => 'memory consumed by the program in bytes.',
+      ),
+      'error_signal' => array(
+        'type' => 'int',
+      ),
+      'result' => array(
+        'type' => 'int',
+      ),
+      'source' => array(
+        'description' => 'Source code for submission.',
+        'type' => 'text',
+        'size' => 'normal',
+        'serialize' => TRUE,
+        'not null' => TRUE,
+      ),
+      'input' => array(
+        'description' => 'Input data for submission.',
+        'type' => 'text',
+        'size' => 'normal',
+        'serialize' => TRUE,
+      ),
+      'output' => array(
+        'description' => 'Output of submission.',
+        'type' => 'text',
+        'size' => 'normal',
+        'serialize' => TRUE,
+      ),
+      'stderr' => array(
+        'description' => 'Stderr output.',
+        'type' => 'text',
+        'size' => 'normal',
+        'serialize' => TRUE,
+      ),
+      'compile_info' => array(
+        'description' => 'Compilation information.',
+        'type' => 'text',
+        'size' => 'normal',
+        'serialize' => TRUE,
+      ),
+      'public' => array(
+        'type' => 'int',
+        'default' => 1,
+        'size' => 'tiny',
+        'description' => 'A boolean to indicate whether or not this submission is visible in public.',
+      ),
+      'status' => array(
+        'description' => 'Status of each submission.',
+        'type' => 'int',
+        'size' => 'normal',
+      ),
+      'error' => array(
+        'description' => 'Error code of each submission.',
+        'type' => 'varchar',
+        'length' => 60,
+      ),
+      'uid' => array(
+        'description' => 'The {users}.uid that this submission.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      // signal, memory, time taken, submission date, cmpinfo, IDE One user name, submitted user name
+    ),
+    'foreign keys' => array(
+      'code_author' => array(
+        'table' => 'users',
+        'columns' => array('uid' => 'uid'),
+      ),
+    ),
+    'primary key' => array('link'),
+  );
+  return $schema;
+}

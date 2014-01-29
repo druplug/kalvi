@@ -1,0 +1,19 @@
+<?php
+
+/**
+ * Implements hook_field_schema().
+ *
+ * Defines the database schema of the field, using the format used by the
+ * Schema API.
+ */
+function coding_problem_field_schema($field) {
+  $columns = array(
+    'problem_title' => array('type' => 'varchar', 'length' => 64, 'not null' => FALSE),
+    'problem_desc' => array('type' => 'varchar', 'length' => 255, 'not null' => FALSE),
+    'problem_lang' => array('type' => 'varchar', 'length' => 25, 'not null' => FALSE),
+    'problem_test' => array('type' => 'varchar', 'length' => 255, 'not null' => FALSE),
+  );
+  return array(
+    'columns' => $columns,
+  );
+}

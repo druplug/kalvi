@@ -2,6 +2,8 @@ name = Kalvi
 description = Install with features configured for Kalvi.
 version = VERSION
 core = 7.x
+
+#core modules
 dependencies[] = block
 dependencies[] = comment
 dependencies[] = contextual
@@ -22,6 +24,19 @@ dependencies[] = overlay
 dependencies[] = field_ui
 dependencies[] = file
 dependencies[] = rdf
+
+#contrib modules
+dependencies[] = ctools
+dependencies[] = eck
+dependencies[] = entity
+dependencies[] = inline_comments
+dependencies[] = link
+dependencies[] = media
+dependencies[] = media_youtube
+dependencies[] = oembed
+dependencies[] = relation
+dependencies[] = views
+dependencies[] = views_ui
 
 ; Information added by Drupal.org packaging script on 2014-01-15
 version = "7.26"

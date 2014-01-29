@@ -1,0 +1,278 @@
+<?php
+
+/**
+ * Implements hook_field_info().
+ *
+ * Provides the description of the field.
+ */
+function coding_problem_field_info() {
+  return array(
+    // We name our field as the associative name of the array.
+    'coding_problem_cproblem' => array(
+      'label' => t('Coding Problem'),
+      'description' => t('A new field that allows you to add coding based exercises.'),
+      'default_widget' => 'coding_problem_cwidget',
+      'default_formatter' => 'coding_problem_cformatter',
+    ),
+  );
+}
+
+/**
+ * Implements hook_field_validate().
+ *
+ * @see field_example_field_widget_error()
+ */
+function coding_problem_field_validate($entity_type, $entity, $field, $instance, $langcode, $items, &$errors) {
+  foreach ($items as $delta => $item) {
+    //TODO: Do some validation
+  }
+}
+
+/**
+ * Implements hook_field_is_empty().
+ */
+function coding_problem_field_is_empty($item, $field) {
+  if (!empty($item['problem_title']) && empty($item['problem_desc']) &&
+    empty($item['problem_lang']) && empty($item['problem_test'])) {
+    return FALSE;
+  }
+  return TRUE;
+}
+
+/**
+ * Implements hook_field_formatter_info().
+ *
+ * @see field_example_field_formatter_view()
+ */
+function coding_problem_field_formatter_info() {
+  return array(
+    // This formatter displays a text area with codemirror formatting
+    'coding_problem_cformatter' => array(
+      'label' => t('Coding formatter'),
+      'field types' => array('coding_problem_cproblem'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_field_formatter_view().
+ *
+ * Two formatters are implemented.
+ * - field_example_simple_text just outputs markup indicating the color that
+ *   was entered and uses an inline style to set the text color to that value.
+ * - field_example_color_background does the same but also changes the
+ *   background color of div.region-content.
+ *
+ * @see field_example_field_formatter_info()
+ */
+function coding_problem_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
+  $element = array();
+
+  switch ($display['type']) {
+    // This formatter simply outputs the field as text and with a color.
+    case 'coding_problem_cformatter':
+      foreach ($items as $delta => $item) {
+        $element[$delta] = array(
+          // We create a render array to produce the desired markup,
+          // "<p style="color: #hexcolor">The color code ... #hexcolor</p>".
+          // See theme_html_tag().
+          '#type' => 'html_tag',
+          '#tag' => 'p',
+          '#attributes' => array(
+            //'style' => 'color: ' . $item['cproblem'],
+          ),
+          '#value' => t('The color code in this field is @code', array('@code' => $item['cproblem'])),
+        );
+      }
+      break;
+  }
+
+  return $element;
+}
+
+/**
+ * Implements hook_field_widget_info().
+ *
+ * @see field_example_field_widget_form()
+ */
+function coding_problem_field_widget_info() {
+  return array(
+    'coding_problem_cproblem_widget' => array(
+       'label' => t('Coding problem field'),
+       'field types' => array('coding_problem_cproblem'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_field_widget_form().
+ *
+ * hook_widget_form() is where Drupal tells us to create form elements for
+ * our field's widget.
+ *
+ * We provide one of three different forms, depending on the widget type of
+ * the Form API item provided.
+ *
+ * The 'field_example_colorpicker' and 'field_example_text' are essentially
+ * the same, but field_example_colorpicker adds a javascript colorpicker
+ * helper.
+ *
+ * field_example_3text displays three text fields, one each for red, green,
+ * and blue. However, the field type defines a single text column,
+ * rgb, which needs an HTML color spec. Define an element validate
+ * handler that converts our r, g, and b fields into a simulated single
+ * 'rgb' form element.
+ */
+function coding_problem_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
+  $title = isset($items[$delta]['problem_title']) ? $items[$delta]['problem_title'] : '';
+  $desc = isset($items[$delta]['problem_desc']) ? $items[$delta]['problem_desc'] : '';
+  $lang = isset($items[$delta]['problem_lang']) ? $items[$delta]['problem_lang'] : '';
+  $test = isset($items[$delta]['problem_test']) ? $items[$delta]['problem_test'] : '';  
+
+  $widget = $element;
+  $widget['#delta'] = $delta;
+
+  switch ($instance['widget']['type']) {
+
+    case 'coding_problem_cproblem_widget':
+      // Convert rgb value into r, g, and b for #default_value.
+      if (!empty($value)) {
+        preg_match_all('@..@', substr($value, 1), $match);
+      }
+      else {
+        $match = array(array());
+      }
+
+      // Make this a fieldset with the three text fields.
+      $widget += array(
+        '#type' => 'fieldset',
+        //'#element_validate' => array('coding_problem_cwidget_validate'),
+
+        // #delta is set so that the validation function will be able
+        // to access external value information which otherwise would be
+        // unavailable.
+        '#delta' => $delta,
+
+        '#attached' => array(
+          'css' => array(drupal_get_path('module', 'field_example') . '/field_example.css'),
+        ),
+      );
+    
+      $widget['problem_title'] = array(
+          '#type' => 'textfield',
+          '#title' => t('Problem Title'),
+          '#size' => 64,
+          '#default_value' => $title,
+          '#attributes' => array('class' => array('p-title')),
+          '#description' => t('The title for your coding problem.'),
+        );
+      
+      $widget['problem_desc'] = array(
+          '#type' => 'textarea',
+          '#title' => t('Problem Description'),
+          '#rows' => 3,
+          '#default_value' => $desc,
+          '#attributes' => array('class' => array('p-desc')),
+          '#description' => t('Describe your coding problem.'),
+        );
+      
+      $widget['problem_lang'] = array(
+          '#type' => 'select',
+          '#title' => t('Language'),
+          '#default_value' => $lang,
+          '#options' => _get_terms('programming_languages'),
+          '#empty_option' => t('- Select Language -'),          
+          '#attributes' => array('class' => array('p-lang')),
+          '#description' => t('Select the programming language for this problem.'),
+        );
+      
+      $widget['problem_test'] = array(
+          '#type' => 'textarea',
+          '#title' => t('Test Cases'),
+          '#size' => 4,
+          '#default_value' => $test,
+          '#attributes' => array('class' => array('p-testcase')),
+          '#description' => t('Enter one test case each line. Format: [input], [expected output]'),
+        );
+      
+      if ($instance['required'] == 1) {
+        $widget['problem_title']['#required'] = 1;
+        $widget['problem_desc']['#required'] = 1;
+        $widget['problem_lang']['#required'] = 1;
+        $widget['problem_test']['#required'] = 1;
+      }
+      
+      break;
+
+  }
+
+  $element = $widget;
+  return $element;
+}
+
+
+/**
+ * Validate the individual fields and then convert them into a single HTML RGB
+ * value as text.
+ */
+function coding_problem_cwidget_validate($element, &$form_state) {
+  $delta = $element['#delta']; // TODO: Isn't there a better way to find out which element?
+  $field = $form_state['field'][$element['#field_name']][$element['#language']]['field'];
+  $field_name = $field['field_name'];
+  if (isset($form_state['values'][$field_name][$element['#language']][$delta]['cproblem'])) {
+    $values = $form_state['values'][$field_name][$element['#language']][$delta]['cproblem'];
+    
+
+    $value = sprintf('#%02s%02s%02s', $values['problem_title'], $values['problem_desc'], $values['problem_test']);
+    form_set_value($element, $values, $form_state);
+  }
+}
+
+/**
+ * Implements hook_field_widget_error().
+ *
+ * hook_field_widget_error() lets us figure out what to do with errors
+ * we might have generated in hook_field_validate(). Generally, we'll just
+ * call form_error().
+ *
+ * @see field_example_field_validate()
+ * @see form_error()
+ */
+function coding_problem_field_widget_error($element, $error, $form, &$form_state) {
+  switch ($error['error']) {
+    case 'coding_problem_invalid':
+      form_error($element, $error['message']);
+      break;
+  }
+}
+
+/**
+ * Implements hook_menu().
+ *
+ * Provides a simple user interface that tells the developer where to go.
+ */
+function coding_problem_menu() {
+  $items['coding_problem'] = array(
+    'title' => 'Coding problem field',
+    'page callback' => '_coding_problem_page',
+    'access callback' => TRUE,
+  );
+  return $items;
+}
+
+/**
+ * A simple page to explain to the developer what to do.
+ */
+function _coding_problem_page() {
+  return t("The Field Example provides a field composed of an HTML RGB value, like #ff00ff. To use it, add the field to a content type.");
+}
+
+function _get_terms($name) {
+  $myvoc = taxonomy_vocabulary_machine_name_load($name);
+  $tree = taxonomy_get_tree($myvoc->vid);
+  $terms = array();
+  foreach ($tree as $term) {
+    $terms[$term->tid] = $term->name;
+  }
+  return $terms;
+}

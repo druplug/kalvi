@@ -4,7 +4,7 @@
  * Implements hook_menu().
  */
 function sessions_menu() {
-  $items['sessions/add'] = array(
+  $items['session/add'] = array(
     'page callback' => 'drupal_get_form',
     'page arguments' => array('sessions_add_form'),
     'access arguments' => array('access content'),
@@ -14,7 +14,7 @@ function sessions_menu() {
 }
 
 function sessions_form_alter(&$form, &$form_state, $form_id) {
-  if($form_id == 'session_node_form') {
+  if($form_id == 'session_node_form_no') {
     kpr($form);
     $form['field_course'] = array(
       '#type' => 'select',
@@ -57,12 +57,12 @@ function sessions_add_form($form, $form_state) {
   $form['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Add Session'),
-    '#submit' => 'sessions_add_form_submit',
   );
+  $form['#submit'][] = 'sessions_add_form_submit';
   return $form;
 }
 
-function sessions_add_form_submit($form, $form_state) {
+function sessions_add_form_submit($form, &$form_state) {
   
   $node = new stdClass();
  
@@ -70,7 +70,7 @@ function sessions_add_form_submit($form, $form_state) {
   node_object_prepare($node);
   $node->title = $form_state['values']['title'];
   $node->language = LANGUAGE_NONE;
-  $node->body[LANGUAGE_NONE]['0']['value'] = 'test content';//$form_state['values']['body'];
+  $node->body[LANGUAGE_NONE]['0']['value'] = $form_state['values']['body'];
   node_submit($node);
   node_save($node);
 
@@ -87,15 +87,33 @@ function sessions_add_form_submit($form, $form_state) {
   }
 }
 
+function sessions_views_post_render(&$view, &$output, &$cache) {
+  if($view->name == 'course_content') {
+    drupal_add_js(drupal_get_path('module', 'sessions').'/js/stickUp.js', 'file');
+    drupal_add_js('jQuery(document).ready(function ($) { alert("Hello!"); });',
+    array('type' => 'inline', 'scope' => 'footer', 'weight' => 5));
+    drupal_add_js(drupal_get_path('module', 'sessions').'/js/nav.js', 'file');
+    $menu = '<div class="sticky-nav"><ul>';
+    foreach($view->result as $row) {
+      $menu .= '<li>'.l(t($row->node_title), current_path(), array('fragment' => $row->node_title)).'</li>';
+    }
+    $menu .= '</ul></div>';
+    $output = $menu . $output;
+  }
+}
+
 function _entity_as_options($entity_type) {
   $entities = array();
   $query = new EntityFieldQuery();
   $query
     ->entityCondition('entity_type', $entity_type, '=');
   $result = $query->execute();
+  if(empty($result['course'])) {
+    return $entities;
+  }
   foreach($result['course'] as $course) {
     $entity = entity_load('course', array($course->id));
-    $entities[$entity[1]->id] = $entity[1]->title;
+    $entities[$entity[$course->id]->id] = $entity[$course->id]->title;
   }
   return $entities;
 }

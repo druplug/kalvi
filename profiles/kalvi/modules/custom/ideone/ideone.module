@@ -1,0 +1,540 @@
+<?php
+/*
+ * TODO:
+ * 1. make username and password configurable
+ * 2. make form suffix, prefix and output as configurable
+ * 3. decorate output
+ * 4. store/retrieve results on a per user basis
+ */
+
+define('SALT', '!kQm*fF3pXe1Kbm%9');
+
+function ideone_menu() {
+  $items = array();
+
+ $items['code-engine/new/%'] = array(
+    'title' => 'New program',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('codingbat_form', 2),
+    'access callback' => TRUE,
+  );
+
+  $items['code-engine/%'] = array(
+    'title' => 'Code Sample',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('codingbat_form', '', 1),
+    'access callback' => TRUE,
+  );
+
+  $items['admin/config/services/ideone/settings'] = array(
+    'title' => 'IDEOne Settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('ideone_settings_form'),
+    'access callback' => TRUE,
+  );
+
+  $items['code-engine'] = array(
+    'title' => 'Code Engine',
+    'page callback' => 'full_page',
+    'access callback' => TRUE,
+  );
+
+  return $items;
+}
+
+function full_page() {
+  global $base_url;
+
+  $op = '<div class="grid-12"><div class="grid-6 alpha">';
+
+  $img = $base_url . '/'. drupal_get_path('theme', 'roever').'/images/lang/java.png';
+  $java = theme('imagecache_external', array('style_name' => 'thumbnail', 'path' => $img)) . l(t('Java 7'), 'code-engine/new/Java7');
+  $op .= '<div class="lang">' . $java . '</div>';
+
+  $img = $base_url . '/'. drupal_get_path('theme', 'roever').'/images/lang/cpp.jpg';
+  $cpp = theme('imagecache_external', array('style_name' => 'thumbnail', 'path' => $img)) . l(t('C++'), 'code-engine/new/cpp');
+  $op .= '<div class="lang">' . $cpp . '</div>';
+
+  $img = $base_url . '/'. drupal_get_path('theme', 'roever').'/images/lang/ruby.png';
+  $ruby = theme('imagecache_external', array('style_name' => 'thumbnail', 'path' => $img)) . l(t('Ruby'), 'code-engine/new/rb');
+  $op .= '<div class="lang">' . $ruby . '</div>';
+
+  $img = $base_url . '/'. drupal_get_path('theme', 'roever').'/images/lang/py.png';
+  $python = theme('imagecache_external', array('style_name' => 'thumbnail', 'path' => $img)) . l(t('Python'), 'code-engine/new/py');
+  $op .= '<div class="lang">' . $python . '</div>';
+
+  $sample_programs = '<div class="sample-program">' . l(t('Java program to find all subsets of an array'), 'code-engine/DkDhcE') . '</div>';
+  $sample_programs .= '<div class="sample-program">' . l(t('C++ program with interactive inputs'), 'code-engine/qhL2S6') . '</div>';
+  $sample_programs .= '<div class="sample-program">' . l(t('Python program which does simple math'), 'code-engine/pkPuev') . '</div>';
+
+  $op .= '</div>';
+  $op .= '<div class="grid-6 omega">';
+  $op .= '<h2 class="ideone-title"> Sample Programs </h2>';
+  $op .= $sample_programs;
+  $op .= '</div></div>';
+  return $op;
+}
+
+function codingbat_form($form, &$form_state, $lang, $link='') {
+  if($lang == 'cpp') {
+    $lang = 'C++';
+  }
+
+  if($lang == 'py') {
+    $lang = 'Python';
+  }
+
+  if($lang == 'rb') {
+    $lang = 'Ruby';
+  }
+
+  if($lang == 'java') {
+    $lang = 'Java';
+  }
+
+  if($lang == 'bash') {
+    $lang = 'Bash';
+  }
+
+  if($lang == 'sql') {
+    $lang = 'SQL';
+  }
+
+  $form['code'] = array(
+    '#type' => 'textarea',
+    '#attributes' => array('id' => array('codingbat')),
+  );
+
+  $form['link'] = array(
+    '#type' => 'hidden',
+    );
+
+
+  $form['lang'] = array(
+    '#type' => 'hidden',
+    '#attributes' => array('id' => array('programming-language')),
+    '#weight' => -8,
+    );
+
+  $form['java'] = array(
+    '#title' => t('Code in %lang', array('%lang' => $lang)),
+    '#type' => 'textarea',
+    '#rows' => 2,
+    '#weight' => -10,
+    '#attributes' => array('class' => array('java')),
+  );
+
+  $form['programinput'] = array(
+    '#title' => t('Input'),
+    '#type' => 'textarea',
+    '#rows' => 2,
+    '#attributes' => array('class' => array('program-input')),
+    '#weight' => -5,
+  );
+
+  $form['input'] = array(
+    '#type' => 'textarea',
+    '#attributes' => array('id' => array('program-input')),
+  );
+
+  $form['result'] = array(
+    '#title' => t('Output'),
+    '#prefix' => '<div id="result-wrapper">',
+    '#markup' => '',
+    '#suffix' => '</div>',
+    '#weight' => 5,
+  );
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Run!'),
+    '#ajax' => array(
+      'callback' => 'codingbat_callback',
+      'wrapper' => 'result-wrapper',
+    ),
+    '#weight' => 10,
+    '#attributes' => array('class' => array('btn-success')),
+  );
+
+  $form['#attached'] = array(
+    'js' => array(
+      array(
+        'data' => libraries_get_path('codemirror') . '/lib/codemirror.js',
+        'weight' => -10,
+        'type' => 'file',
+      ),
+      array(
+        'data' => drupal_get_path('module', 'interact') . '/js/jquery.codemirror.js',
+        'weight' => -5,
+        'type' => 'file',
+      ),
+      array(
+        'data' => drupal_get_path('module', 'interact')  . '/js/interact.js',
+        'weight' => -4,
+        'type' => 'file',
+      ),
+      array(
+        'data' => drupal_get_path('module', 'ideone')  . '/js/ideone.js',
+        'weight' => -3,
+        'type' => 'file',
+      ),
+    ),
+    'css' => array(
+      array(
+        'data' => libraries_get_path('codemirror') . '/lib/codemirror.css',
+        'type' => 'file',
+      ),
+      array(
+        'data' => libraries_get_path('codemirror') . '/theme/blackboard.css',
+        'type' => 'file',
+      ),
+    ),
+  );
+
+  if($info = get_submission_details_link($link)) {
+    // if code is not yet compiled
+    if($info->status != 0) {
+      // get latest status
+      $info = get_submission_details($link);
+      // update db
+      update_submission($link, $info);
+    }
+    $form['java']['#default_value'] = $info->source;
+    $form['programinput']['#default_value'] = $info->input;
+    $form['result']['#markup'] = '<pre>' . $info->output . '</pre>';
+    $form['lang']['#disabled'] = TRUE;
+    $form['lang']['#default_value'] = $info->language;
+    $form['link']['#value'] = $link;
+  }
+
+  if(!empty($lang)) {
+    $language = $lang;
+  }
+  else {
+    $language = $info->language;
+  }
+
+  $form['lang']['#value'] = $language;
+
+  switch ($language) {
+    case 'Java':
+    case 'C++':
+    case 'C':
+      $form['#attached']['js'][] = array(
+        'data' => libraries_get_path('codemirror') . '/mode/clike/clike.js',
+        'weight' => -8,
+        'type' => 'file',
+      );
+      break;
+
+    case 'Python':
+      $form['#attached']['js'][] = array(
+        'data' => libraries_get_path('codemirror') . '/mode/python/python.js',
+        'weight' => -8,
+        'type' => 'file',
+      );
+      break;
+
+    case 'SQL':
+      $form['#attached']['js'][] = array(
+        'data' => libraries_get_path('codemirror') . '/mode/sql/sql.js',
+        'weight' => -8,
+        'type' => 'file',
+      );
+      break;
+
+    case 'Bash':
+      $form['#attached']['js'][] = array(
+        'data' => libraries_get_path('codemirror') . '/mode/shell/shell.js',
+        'weight' => -8,
+        'type' => 'file',
+      );
+      break;
+
+    case 'Ruby':
+      $form['#attached']['js'][] = array(
+        'data' => libraries_get_path('codemirror') . '/mode/ruby/ruby.js',
+        'weight' => -8,
+        'type' => 'file',
+      );
+      break;
+  }
+
+  return $form;
+}
+
+function codingbat_callback($form, $form_state) {
+  if($form_state['values']['link']) {
+    $result = get_submission_details($form_state['values']['link']);
+  } else {
+    $result = run_code($form_state['values']['code'], $form_state['values']['lang'], $form_state['values']['input']);
+  }
+  if($result) {
+    $form['result']['#markup'] = '<pre>' . $result['output'] . '</pre>';
+  }
+  else {
+    $form['result']['#markup'] = '<div>'.t('Code Engine has encountered an error.') .'</div>';
+  }
+  return $form['result'];
+}
+
+/**
+ * Implements hook_permission()
+ */
+function ideone_permission() {
+  return array(
+    'administer Code Engine' => array(
+      'title' => t('Administer Code Engine'),
+    ),
+    'Use Code Engine' => array(
+      'title' => t('Use Code Engine'),
+    ),
+  );
+}
+
+/**
+ * API call function
+ */
+function ideone_api($method, $args) {
+
+  // include nu_soap library
+  require_once(drupal_get_path('module', 'ideone') .'/lib/nusoap.php');
+
+  // define wsdl path
+  $wsdl_path = 'http://ideone.com/api/1/service.wsdl';
+
+  // create new soap client instance
+  $soap_client = new nusoap_client($wsdl_path, true);
+
+  // check for error
+  $error = $soap_client->getError();
+  if ($error) {
+    // handle error
+  }
+
+  // call soap server method
+  $result = $soap_client->call($method, $args);
+    
+   // handle code that take more time to run (to some extent)
+  if($method == 'getSubmissionDetails') {
+    $timeout = 8;
+    while($result['output'] == '') {
+      sleep(3);
+      $result = $soap_client->call($method, $args);
+      if($timeout-- == 0) break; 
+    }
+  }
+  return $result;
+}
+
+function create_submission($code, $lang, $input) {
+  $programming_language = array(
+    'Java' => 10,
+    'Python' => 4,
+    'C' => 11,
+    'C++' => 1,
+    'php' => 29,
+    'Ruby' => 17,
+    'Bash' => 28,
+    'SQL' => 40,
+  );
+  $args = array(
+    'user' => ideone_get_username(),
+    'pass' => ideone_get_password(),
+    'sourceCode' => $code,
+    'language' => $programming_language[$lang],
+    'input' => $input,
+    'run' => TRUE,
+    'private' => TRUE,
+  );
+
+  return ideone_api('createSubmission', $args);
+}
+
+
+function get_status($link) {
+  $args = array(
+    'user' => ideone_get_username(),
+    'pass' => ideone_get_password(),
+    'link' => $link,
+  );
+
+  return ideone_api('getSubmissionStatus', $args);
+}
+
+function run_code($code, $lang, $input) {
+  $submission = create_submission($code, $lang, $input);
+  if($submission['link']) {
+    $info = get_submission_details($submission['link']);
+    insert_submission($submission['link'], $info);
+    return $info;
+  }
+  else {
+    // find a way to insert queued submissions
+  }
+  return FALSE;
+}
+
+function get_submission_details($link) {
+  $args = array(
+    'user' => ideone_get_username(),
+    'pass' => ideone_get_password(),
+    'link' => $link,
+    'withSource' => TRUE,
+    'withInput' => TRUE,
+    'withOutput' => TRUE,
+    'withStderr' => TRUE,
+    'withCmpinfo' => TRUE,
+  );
+
+  return ideone_api('getSubmissionDetails', $args);
+}
+
+function update_submission($link, $info) {
+  global $user;
+  $code = db_update('ideone')
+    ->fields(array(
+        'date' => strtotime($info['date']),
+        'language_id' => $info['langId'],
+        'language' => $info['langName'],
+        'language_version' => $info['langVersion'],
+        'time' => $info['time'],
+        'status' => $info['status'],
+        'result' => $info['result'],
+        'memory' => $info['memory'],
+        'error_signal' => $info['signal'],
+        'public' => (int)$info['public'],
+        'source' => $info['source'],
+        'stderr' => $info['stderr'],
+        'input' => $info['input'],
+        'output' => $info['output'],
+        'compile_info' => $info['cmpinfo'],
+      ))
+   ->condition('link', $link)
+   ->condition('uid', $user->uid);
+  $code->execute();
+}
+
+function insert_submission($link, $info) {
+  global $user;
+  $code = db_insert('ideone')
+    ->fields(array(
+        'link' => $link,
+        'date' => strtotime($info['date']),
+        'language_id' => $info['langId'],
+        'language' => $info['langName'],
+        'language_version' => $info['langVersion'],
+        'time' => $info['time'],
+        'status' => $info['status'],
+        'result' => $info['result'],
+        'memory' => $info['memory'],
+        'error_signal' => $info['signal'],
+        'public' => (int)$info['public'],
+        'source' => $info['source'],
+        'stderr' => $info['stderr'],
+        'input' => $info['input'],
+        'output' => $info['output'],
+        'compile_info' => $info['cmpinfo'],
+        'uid' => $user->uid,
+      ));
+  $code->execute();
+}
+
+function get_submission_details_link($link) {
+  $query = db_select('ideone', 'i');
+  $query
+    ->condition('link', $link)
+    ->fields('i', array('language_id', 'source', 'input', 'output', 'language', 'status'));
+  return $query->execute()->fetch();
+}
+
+
+function get_submission_details_user($uid) {
+  $query = db_select('ideone', 'i');
+  $query
+    ->condition('uid', $uid)
+    ->fields('i', array('language_id', 'source', 'input', 'output'))
+    ->orderBy('date', 'DESC');
+  return $query->execute()->fetchAll();
+}
+
+/**
+ * IDEOne user credentials form.
+ */
+function ideone_settings_form($form, &$form_state) {
+  $settings = variable_get('ideone_settings', array());
+
+  $form['ideone_settings'] = array(
+    '#type' => 'container',
+    '#tree' => TRUE,
+  );
+  $form['ideone_settings']['username'] = array(
+    '#title' => t('Username'),
+    '#type' => 'textfield',
+    '#default_value' => isset($settings['username']) ? $settings['username'] : '',
+  );
+
+  $form['ideone_settings']['password'] = array(
+    '#title' => t('Password'),
+    '#type' => 'password',
+  );
+
+  if(isset($settings['password'])) {
+    $form['ideone_settings']['password']['#default_value'] = decrypt($settings['password']);
+  }
+  else {
+    $form['ideone_settings']['password']['#default_value'] = '';
+  }
+
+  $form['actions'] = array(
+    '#type' => 'container',
+  );
+  $form['actions']['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save'),
+  );
+
+  return $form;
+}
+
+/**
+ * Encrypt the password while validating
+ */
+function ideone_settings_form_validate(&$form, &$form_state) {
+  $form_state['values']['ideone_settings']['password'] = encrypt($form_state['values']['ideone_settings']['password']);
+}
+
+/**
+ * Submit callback for IDEOne settings form.
+ */
+function ideone_settings_form_submit(&$form, &$form_state) {
+  // Save settings.
+  variable_set('ideone_settings', $form_state['values']['ideone_settings']);
+  drupal_set_message(t('IDEOne credentials have been saved successfully.'));
+}
+
+function ideone_get_username() {
+  $username = &drupal_static(__FUNCTION__);
+  if(!isset($username)) {
+    $settings = variable_get('ideone_settings', array());
+    $username = $settings['username'];
+  }
+  return $username;
+}
+
+function ideone_get_password() {
+  $password = &drupal_static(__FUNCTION__);
+  if(!isset($password)) {
+    $settings = variable_get('ideone_settings', array());
+    $password = decrypt($settings['password']);
+  }
+  return $password;
+}
+
+function decrypt($encrypted, $salt=SALT) {
+  return rtrim(mcrypt_decrypt(MCRYPT_RIJNDAEL_256, md5($salt), base64_decode($encrypted), MCRYPT_MODE_CBC, md5(md5($salt))), "\0");
+}
+
+function encrypt($string, $salt=SALT) {
+  return base64_encode(mcrypt_encrypt(MCRYPT_RIJNDAEL_256, md5($salt), $string, MCRYPT_MODE_CBC, md5(md5($salt))));
+}

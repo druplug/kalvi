@@ -1,0 +1,5 @@
+name = IDE one
+description = IDE one integration
+core = 7.x
+
+dependencies[] = libraries
