@@ -1,7 +1,32 @@
+*~
 # Ignore configuration files that may contain sensitive information.
-sites/*/settings*.php
+sites/*/*settings*.php
 
-# Ignore paths that contain user-generated content.
-sites/*/files
-sites/*/private
-/nbproject/private/
+# Ignore paths that contain generated content.
+cache/
+files/
+sites/*/files/
+sites/*/private/
+
+# Ignore default text files
+.htaccess
+robots.txt
+/CHANGELOG.txt
+/COPYRIGHT.txt
+/INSTALL*.txt
+/LICENSE.txt
+/MAINTAINERS.txt
+/UPGRADE.txt
+/README.txt
+sites/all/README.txt
+sites/all/modules/README.txt
+sites/all/themes/README.txt
+nbproject
+profiles/qengine/behat/bin
+profiles/qengine/behat/composer.phar
+profiles/qengine/behat/composer.lock
+profiles/qengine/behat/*.jar
+profiles/qengine/behat/vendor
+/FirePHPCore/*
+*.swp
+/TAGS
